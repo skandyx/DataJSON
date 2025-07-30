@@ -2,10 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Loader2, Copy, Check, Play, StopCircle, ClipboardCopy, Server, Trash2 } from 'lucide-react';
+import { Copy, Check, Play, StopCircle, ClipboardCopy, Server, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -16,7 +13,6 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { handleStreamData } from '@/app/actions';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -41,8 +37,8 @@ export default function Home() {
   const handleCopyApiUrl = () => {
     navigator.clipboard.writeText(apiUrl);
     toast({
-      title: 'Copied!',
-      description: 'API Route URL has been copied to your clipboard.',
+      title: 'Copié !',
+      description: "L'URL de la route API a été copiée dans votre presse-papiers.",
     });
   };
 
@@ -55,8 +51,8 @@ export default function Home() {
       }
       setIsListening(false);
       toast({
-        title: 'Stopped Listening',
-        description: 'You are no longer listening for new events.',
+        title: 'Écoute arrêtée',
+        description: "Vous n'écoutez plus les nouveaux événements.",
       });
       return;
     }
@@ -64,8 +60,8 @@ export default function Home() {
     // Connect
     setIsListening(true);
     toast({
-      title: 'Listening for events...',
-      description: 'Your app is now waiting for data from your PBX.',
+      title: 'Écoute des événements...',
+      description: 'Votre application attend maintenant les données de votre PBX.',
     });
 
     const es = new EventSource('/api/stream/events');
@@ -74,37 +70,22 @@ export default function Home() {
     es.onmessage = async (event) => {
       // Update raw data console
       setRawStreamData(prev => [event.data, ...prev].slice(0, MAX_CONSOLE_MESSAGES));
-
+      
+      // Directly display the received data
       try {
-        const result = await handleStreamData({
-          streamData: event.data,
-          metadata: 'Data from PBX', // You can modify this if needed
-        });
-
-        if (result.error) {
-          toast({
-            title: 'Error processing data',
-            description: result.error,
-            variant: 'destructive',
-          });
-        } else if (result.success) {
-          setJsonOutput(JSON.stringify(JSON.parse(result.success), null, 2));
-        }
+        const parsedJson = JSON.parse(event.data);
+        setJsonOutput(JSON.stringify(parsedJson, null, 2));
       } catch (e) {
-        toast({
-          title: 'An unexpected error occurred',
-          description: 'Could not process stream event.',
-          variant: 'destructive',
-        });
+        setJsonOutput(event.data); // Fallback for non-JSON data
       }
     };
 
     es.onerror = (err) => {
       console.error('EventSource failed:', err);
       toast({
-        title: 'Connection Error',
+        title: 'Erreur de connexion',
         description:
-          'Something went wrong with the event stream. Please try again.',
+          "Une erreur s'est produite avec le flux d'événements. Veuillez réessayer.",
         variant: 'destructive',
       });
       if (eventSourceRef.current) {
@@ -119,8 +100,8 @@ export default function Home() {
       navigator.clipboard.writeText(jsonOutput);
       setIsCopied(true);
       toast({
-        title: 'Copied to clipboard!',
-        description: 'The JSON data has been copied.',
+        title: 'Copié dans le presse-papiers !',
+        description: 'Les données JSON ont été copiées.',
       });
       setTimeout(() => setIsCopied(false), 2000);
     }
@@ -142,7 +123,7 @@ export default function Home() {
           StreamScribe
         </h1>
         <p className="text-muted-foreground mt-2 text-lg">
-          Your real-time data stream companion.
+          Votre compagnon de flux de données en temps réel.
         </p>
       </div>
       <div className="w-full max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -150,11 +131,11 @@ export default function Home() {
           <Card className="shadow-lg border-2 border-transparent hover:border-primary/20 transition-all duration-300">
             <CardHeader>
               <CardTitle className="font-headline text-2xl">
-                Your API Endpoint
+                Votre Endpoint API
               </CardTitle>
               <CardDescription>
-                Copy this URL and paste it into your PBX system's webhook or API
-                configuration. Your PBX will send data to this endpoint.
+                Copiez cette URL et collez-la dans la configuration webhook ou API de votre système PBX.
+                Votre PBX enverra les données à ce point de terminaison.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -167,7 +148,7 @@ export default function Home() {
                   disabled={!apiUrl}
                 >
                   <ClipboardCopy className="h-5 w-5" />
-                  <span className="sr-only">Copy API URL</span>
+                  <span className="sr-only">Copier l'URL de l'API</span>
                 </Button>
               </div>
               <Button
@@ -176,11 +157,11 @@ export default function Home() {
               >
                 {isListening ? (
                   <>
-                    <StopCircle className="mr-2 h-5 w-5" /> Stop Listening
+                    <StopCircle className="mr-2 h-5 w-5" /> Arrêter l'écoute
                   </>
                 ) : (
                   <>
-                    <Play className="mr-2 h-5 w-5" /> Start Listening
+                    <Play className="mr-2 h-5 w-5" /> Démarrer l'écoute
                   </>
                 )}
               </Button>
@@ -192,10 +173,10 @@ export default function Home() {
               <CardHeader className="flex flex-row items-start justify-between">
                 <div>
                   <CardTitle className="font-headline text-2xl">
-                    Scribed JSON
+                    Dernier JSON Reçu
                   </CardTitle>
                   <CardDescription>
-                    The latest contextualized JSON from the stream.
+                    Le dernier objet JSON reçu du flux.
                   </CardDescription>
                 </div>
                 <Button
@@ -209,7 +190,7 @@ export default function Home() {
                   ) : (
                     <Copy className="h-5 w-5" />
                   )}
-                  <span className="sr-only">Copy JSON</span>
+                  <span className="sr-only">Copier JSON</span>
                 </Button>
               </CardHeader>
               <CardContent>
@@ -230,20 +211,20 @@ export default function Home() {
               <div>
                 <CardTitle className="font-headline text-2xl flex items-center gap-2">
                   <Server className="h-6 w-6" />
-                  Live Console
+                  Console Live
                 </CardTitle>
                 <CardDescription>
-                  Raw data received from the stream.
+                  Données brutes reçues du flux.
                 </CardDescription>
               </div>
               <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setRawStreamData([])}
-                  aria-label="Clear Console"
+                  aria-label="Vider la console"
                 >
                   <Trash2 className="h-5 w-5" />
-                  <span className="sr-only">Clear Console</span>
+                  <span className="sr-only">Vider la console</span>
                 </Button>
             </CardHeader>
             <CardContent className="flex-grow">
@@ -255,7 +236,7 @@ export default function Home() {
                         </p>
                     ))
                 ) : (
-                    <p className="text-slate-400">Waiting for data...</p>
+                    <p className="text-slate-400">En attente de données...</p>
                 )}
               </ScrollArea>
             </CardContent>
