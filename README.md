@@ -26,32 +26,15 @@ Suivez ces étapes pour installer et lancer l'application sur votre serveur ou V
 
 Si vous avez le code sous forme de projet, clonez-le sur votre VPS. Sinon, copiez les fichiers du projet.
 
-### 2. Installer les dépendances
+### 2. Lancer l'application (Méthode simple)
 
-Naviguez jusqu'au répertoire du projet et installez les paquets nécessaires :
-
+Naviguez jusqu'au répertoire du projet et exécutez la commande suivante pour installer les dépendances, corriger les paquets, compiler le projet et le démarrer :
 ```bash
-npm install
-```
-
-### 3. Compiler l'application
-
-Compilez le projet pour la production :
-
-```bash
-npm run build
-```
-
-### 4. Lancer l'application
-
-Démarrez le serveur de production :
-
-```bash
-npm run start
+npm install && npm audit fix && npm run build && npm run start
 ```
 L'application se lancera sur le **port 9002**.
 
-### 5. Ouvrir le port sur le pare-feu (Firewall)
+### 3. Ouvrir le port sur le pare-feu (Firewall)
 
 **Ceci est une étape cruciale sur un VPS !** Vous devez autoriser le trafic entrant sur le port que votre application utilise.
 
@@ -73,15 +56,15 @@ sudo ufw allow 9002/tcp
 sudo ufw enable
 ```
 
-### 6. Configurer votre PBX
+### 4. Configurer votre PBX
 
 - Une fois l'application lancée et le port ouvert, visitez son URL dans votre navigateur (ex: `http://VOTRE_IP_DE_VPS:9002`).
 - Copiez les URLs des endpoints affichées sur la page.
 - Collez ces URLs dans la configuration des webhooks ou des API de votre système PBX.
 
-### 7. Consulter les logs (Recommandé)
+### 5. Consulter les logs (Recommandé avec `pm2`)
 
-Pour voir les logs en direct (y compris les données reçues affichées par `console.log`), vous pouvez utiliser un gestionnaire de processus comme `pm2`. C'est très utile pour diagnostiquer les problèmes.
+Pour voir les logs en direct et maintenir l'application en cours d'exécution même après avoir fermé votre terminal, il est fortement recommandé d'utiliser un gestionnaire de processus comme `pm2`.
 
 **a. Installez pm2 globalement :**
 ```bash
@@ -89,6 +72,7 @@ sudo npm install -g pm2
 ```
 
 **b. Lancez l'application avec pm2 :**
+(Assurez-vous d'avoir exécuté `npm install` et `npm run build` au préalable)
 ```bash
 # Remplacez "streamscribe" par le nom de votre choix
 pm2 start npm --name "streamscribe" -- run start
