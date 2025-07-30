@@ -15,6 +15,7 @@ const channelFilePath = path.join('/tmp', `channel_${astra}.log`);
 export async function POST(req: NextRequest) {
   try {
     const data = await req.text(); // Read raw text body
+    console.log("Received data:", data);
 
     if (!data) {
       return NextResponse.json({error: 'No data provided'}, {status: 400});
