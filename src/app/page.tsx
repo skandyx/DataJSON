@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Copy, Check, Play, StopCircle, ClipboardCopy } from 'lucide-react';
+import { Loader2, Copy, Check, Play, StopCircle, ClipboardCopy, Server, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +18,9 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { handleStreamData } from '@/app/actions';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+const MAX_CONSOLE_MESSAGES = 50;
 
 export default function Home() {
   const [jsonOutput, setJsonOutput] = useState<string | null>(null);
@@ -25,6 +28,7 @@ export default function Home() {
   const { toast } = useToast();
   const [apiUrl, setApiUrl] = useState('');
   const [isListening, setIsListening] = useState(false);
+  const [rawStreamData, setRawStreamData] = useState<string[]>([]);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
@@ -68,6 +72,9 @@ export default function Home() {
     eventSourceRef.current = es;
 
     es.onmessage = async (event) => {
+      // Update raw data console
+      setRawStreamData(prev => [event.data, ...prev].slice(0, MAX_CONSOLE_MESSAGES));
+
       try {
         const result = await handleStreamData({
           streamData: event.data,
@@ -138,83 +145,122 @@ export default function Home() {
           Your real-time data stream companion.
         </p>
       </div>
-      <div className="w-full max-w-2xl mx-auto space-y-8">
-        <Card className="shadow-lg border-2 border-transparent hover:border-primary/20 transition-all duration-300">
-          <CardHeader>
-            <CardTitle className="font-headline text-2xl">
-              Your API Endpoint
-            </CardTitle>
-            <CardDescription>
-              Copy this URL and paste it into your PBX system's webhook or API
-              configuration. Your PBX will send data to this endpoint.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Input value={apiUrl} readOnly className="flex-1" />
+      <div className="w-full max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="space-y-8">
+          <Card className="shadow-lg border-2 border-transparent hover:border-primary/20 transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="font-headline text-2xl">
+                Your API Endpoint
+              </CardTitle>
+              <CardDescription>
+                Copy this URL and paste it into your PBX system's webhook or API
+                configuration. Your PBX will send data to this endpoint.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Input value={apiUrl} readOnly className="flex-1" />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleCopyApiUrl}
+                  disabled={!apiUrl}
+                >
+                  <ClipboardCopy className="h-5 w-5" />
+                  <span className="sr-only">Copy API URL</span>
+                </Button>
+              </div>
               <Button
-                variant="outline"
-                size="icon"
-                onClick={handleCopyApiUrl}
-                disabled={!apiUrl}
+                onClick={listenToEvents}
+                className="w-full text-lg py-6"
               >
-                <ClipboardCopy className="h-5 w-5" />
-                <span className="sr-only">Copy API URL</span>
+                {isListening ? (
+                  <>
+                    <StopCircle className="mr-2 h-5 w-5" /> Stop Listening
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-2 h-5 w-5" /> Start Listening
+                  </>
+                )}
               </Button>
-            </div>
-            <Button
-              onClick={listenToEvents}
-              className="w-full text-lg py-6"
-            >
-              {isListening ? (
-                <>
-                  <StopCircle className="mr-2 h-5 w-5" /> Stop Listening
-                </>
-              ) : (
-                <>
-                  <Play className="mr-2 h-5 w-5" /> Start Listening
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {jsonOutput && (
-          <Card className="shadow-lg animate-in fade-in-50 duration-500">
+          {jsonOutput && (
+            <Card className="shadow-lg animate-in fade-in-50 duration-500">
+              <CardHeader className="flex flex-row items-start justify-between">
+                <div>
+                  <CardTitle className="font-headline text-2xl">
+                    Scribed JSON
+                  </CardTitle>
+                  <CardDescription>
+                    The latest contextualized JSON from the stream.
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleCopyOutput}
+                  aria-label="Copy JSON"
+                >
+                  {isCopied ? (
+                    <Check className="h-5 w-5" />
+                  ) : (
+                    <Copy className="h-5 w-5" />
+                  )}
+                  <span className="sr-only">Copy JSON</span>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-accent/50 p-4 rounded-md">
+                  <pre className="overflow-x-auto text-sm">
+                    <code className="font-code text-foreground">
+                      {jsonOutput}
+                    </code>
+                  </pre>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        <Card className="shadow-lg animate-in fade-in-50 duration-500 flex flex-col">
             <CardHeader className="flex flex-row items-start justify-between">
               <div>
-                <CardTitle className="font-headline text-2xl">
-                  Scribed JSON
+                <CardTitle className="font-headline text-2xl flex items-center gap-2">
+                  <Server className="h-6 w-6" />
+                  Live Console
                 </CardTitle>
                 <CardDescription>
-                  The latest contextualized JSON from the stream.
+                  Raw data received from the stream.
                 </CardDescription>
               </div>
               <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleCopyOutput}
-                aria-label="Copy JSON"
-              >
-                {isCopied ? (
-                  <Check className="h-5 w-5" />
-                ) : (
-                  <Copy className="h-5 w-5" />
-                )}
-                <span className="sr-only">Copy JSON</span>
-              </Button>
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setRawStreamData([])}
+                  aria-label="Clear Console"
+                >
+                  <Trash2 className="h-5 w-5" />
+                  <span className="sr-only">Clear Console</span>
+                </Button>
             </CardHeader>
-            <CardContent>
-              <div className="bg-accent/50 p-4 rounded-md">
-                <pre className="overflow-x-auto text-sm">
-                  <code className="font-code text-foreground">
-                    {jsonOutput}
-                  </code>
-                </pre>
-              </div>
+            <CardContent className="flex-grow">
+              <ScrollArea className="h-[450px] w-full bg-slate-900 text-slate-100 p-4 rounded-md font-code text-sm">
+                {rawStreamData.length > 0 ? (
+                    rawStreamData.map((data, index) => (
+                        <p key={index} className="whitespace-pre-wrap break-all border-b border-slate-700 py-1">
+                            {data}
+                        </p>
+                    ))
+                ) : (
+                    <p className="text-slate-400">Waiting for data...</p>
+                )}
+              </ScrollArea>
             </CardContent>
           </Card>
-        )}
+
       </div>
     </main>
   );
