@@ -1,13 +1,17 @@
 # StreamScribe
 
-StreamScribe est une application Next.js conçue pour recevoir des flux de données en temps réel (webhooks) depuis un système externe comme un PBX. Elle affiche les données en direct sur une interface web, tout en les stockant dans un fichier pour archivage.
+StreamScribe est une application Next.js conçue pour recevoir des flux de données en temps réel (webhooks) depuis un système externe comme un PBX. Elle affiche les données en direct sur une interface web, tout en les stockant dans des fichiers pour archivage.
 
 ## Fonctionnalités
 
-- **Endpoint API** : Fournit une URL unique (`/api/stream`) pour recevoir des données via des requêtes POST.
-- **Console en temps réel** : Affiche les données brutes dès leur réception sur la page d'accueil pour un suivi facile.
-- **Affichage du JSON** : Montre le dernier objet JSON reçu du flux.
-- **Stockage des données** : Archive toutes les données brutes reçues dans le fichier `Data-Json/datacalls.json` à la racine du projet. Le dossier `Data-Json` est créé automatiquement.
+- **Endpoints API multiples** : Fournit 4 URLs uniques pour recevoir différents types de données :
+  - `/api/stream/advanced-calls`
+  - `/api/stream/simplified-calls`
+  - `/api/stream/agent-status`
+  - `/api/stream/profile-availability`
+- **Console en temps réel** : Affiche les données brutes de tous les flux dès leur réception sur la page d'accueil pour un suivi facile.
+- **Affichage du JSON** : Montre le dernier objet JSON reçu, tous flux confondus.
+- **Stockage des données** : Archive toutes les données brutes reçues dans des fichiers dédiés (`advanced-calls.json`, `simplified-calls.json`, etc.) dans le dossier `Data-Json` à la racine du projet. Le dossier `Data-Json` est créé automatiquement.
 
 ## Installation et Lancement sur un VPS
 
@@ -72,8 +76,8 @@ sudo ufw enable
 ### 6. Configurer votre PBX
 
 - Une fois l'application lancée et le port ouvert, visitez son URL dans votre navigateur (ex: `http://VOTRE_IP_DE_VPS:9002`).
-- Copiez l'URL de l'endpoint affichée sur la page.
-- Collez cette URL dans la configuration des webhooks ou des API de votre système PBX. L'URL doit être `http://VOTRE_IP_DE_VPS:9002/api/stream`.
+- Copiez les URLs des endpoints affichées sur la page.
+- Collez ces URLs dans la configuration des webhooks ou des API de votre système PBX.
 
 ### 7. Consulter les logs (Recommandé)
 
@@ -94,4 +98,4 @@ pm2 start npm --name "streamscribe" -- run start
 ```bash
 pm2 logs streamscribe
 ```
-C'est dans cette vue que vous verrez les messages "Received data:" lorsque votre PBX enverra des informations.
+C'est dans cette vue que vous verrez les messages "Received data for..." lorsque votre PBX enverra des informations.

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, Play, StopCircle, ClipboardCopy, Server, Trash2 } from 'lucide-react';
+import { Copy, Check, Play, StopCircle, ClipboardCopy, Server, Trash2, ArrowRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -16,26 +16,59 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-const MAX_CONSOLE_MESSAGES = 50;
+const MAX_CONSOLE_MESSAGES = 100;
+
+interface StreamEndpoint {
+  title: string;
+  description: string;
+  path: string;
+  url: string;
+}
 
 export default function Home() {
   const [jsonOutput, setJsonOutput] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   const { toast } = useToast();
-  const [apiUrl, setApiUrl] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [rawStreamData, setRawStreamData] = useState<string[]>([]);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const [endpoints, setEndpoints] = useState<StreamEndpoint[]>([]);
 
   useEffect(() => {
     // Construct the full API URL on the client-side
     if (typeof window !== 'undefined') {
-      setApiUrl(`${window.location.origin}/api/stream`);
+       const origin = window.location.origin;
+       setEndpoints([
+         { 
+           title: "Données d'appel avancées", 
+           description: "Plus précis, chaque appel peut être détaillé sur plusieurs lignes (transferts, renvois, etc.).",
+           path: '/api/stream/advanced-calls',
+           url: `${origin}/api/stream/advanced-calls`
+         },
+         { 
+           title: "Données d'appel simplifiées", 
+           description: "Une ligne pour chaque appel. Recommandé pour Power BI.",
+           path: '/api/stream/simplified-calls',
+           url: `${origin}/api/stream/simplified-calls`
+         },
+         { 
+           title: "Disponibilité des agents", 
+           description: "Temps passé par agent en état connecté, déconnecté, etc. par file d'attente.",
+           path: '/api/stream/agent-status',
+           url: `${origin}/api/stream/agent-status`
+         },
+         { 
+           title: "Disponibilité des profils", 
+           description: "Temps passé par chaque utilisateur dans chaque profil.",
+           path: '/api/stream/profile-availability',
+           url: `${origin}/api/stream/profile-availability`
+         },
+       ]);
     }
   }, []);
 
-  const handleCopyApiUrl = () => {
-    navigator.clipboard.writeText(apiUrl);
+  const handleCopyApiUrl = (url: string) => {
+    navigator.clipboard.writeText(url);
     toast({
       title: 'Copié !',
       description: "L'URL de la route API a été copiée dans votre presse-papiers.",
@@ -61,7 +94,7 @@ export default function Home() {
     setIsListening(true);
     toast({
       title: 'Écoute des événements...',
-      description: 'Votre application attend maintenant les données de votre PBX.',
+      description: 'Votre application attend maintenant les données de votre PBX sur tous les flux.',
     });
 
     const es = new EventSource('/api/stream/events');
@@ -126,57 +159,63 @@ export default function Home() {
           Votre compagnon de flux de données en temps réel.
         </p>
       </div>
-      <div className="w-full max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-8">
-          <Card className="shadow-lg border-2 border-transparent hover:border-primary/20 transition-all duration-300">
+          <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="font-headline text-2xl">
-                Votre Endpoint API
+                Vos Endpoints API
               </CardTitle>
               <CardDescription>
-                Copiez cette URL et collez-la dans la configuration webhook ou API de votre système PBX.
-                Votre PBX enverra les données à ce point de terminaison.
+                Copiez les URLs ci-dessous et collez-les dans la configuration webhook de votre PBX.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Input value={apiUrl} readOnly className="flex-1" />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleCopyApiUrl}
-                  disabled={!apiUrl}
-                >
-                  <ClipboardCopy className="h-5 w-5" />
-                  <span className="sr-only">Copier l'URL de l'API</span>
-                </Button>
-              </div>
-              <Button
-                onClick={listenToEvents}
-                className="w-full text-lg py-6"
-              >
-                {isListening ? (
-                  <>
-                    <StopCircle className="mr-2 h-5 w-5" /> Arrêter l'écoute
-                  </>
-                ) : (
-                  <>
-                    <Play className="mr-2 h-5 w-5" /> Démarrer l'écoute
-                  </>
-                )}
-              </Button>
+              {endpoints.map((endpoint) => (
+                <div key={endpoint.path} className="space-y-2">
+                  <h3 className="font-semibold">{endpoint.title}</h3>
+                  <p className="text-sm text-muted-foreground">{endpoint.description}</p>
+                  <div className="flex items-center space-x-2">
+                    <Input value={endpoint.url} readOnly className="flex-1" />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleCopyApiUrl(endpoint.url)}
+                      disabled={!endpoint.url}
+                    >
+                      <ClipboardCopy className="h-5 w-5" />
+                      <span className="sr-only">Copier l'URL de l'API</span>
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
+
+          <Button
+            onClick={listenToEvents}
+            className="w-full text-lg py-6"
+          >
+            {isListening ? (
+              <>
+                <StopCircle className="mr-2 h-5 w-5" /> Arrêter l'écoute
+              </>
+            ) : (
+              <>
+                <Play className="mr-2 h-5 w-5" /> Démarrer l'écoute de tous les flux
+              </>
+            )}
+          </Button>
 
           {jsonOutput && (
             <Card className="shadow-lg animate-in fade-in-50 duration-500">
               <CardHeader className="flex flex-row items-start justify-between">
                 <div>
                   <CardTitle className="font-headline text-2xl">
-                    Dernier JSON Reçu
+                    Dernier Objet Reçu
                   </CardTitle>
                   <CardDescription>
-                    Le dernier objet JSON reçu du flux.
+                    Le dernier objet JSON reçu, tous flux confondus.
                   </CardDescription>
                 </div>
                 <Button
@@ -211,10 +250,10 @@ export default function Home() {
               <div>
                 <CardTitle className="font-headline text-2xl flex items-center gap-2">
                   <Server className="h-6 w-6" />
-                  Console Live
+                  Console Live (Tous les flux)
                 </CardTitle>
                 <CardDescription>
-                  Données brutes reçues du flux.
+                  Données brutes reçues de tous les flux.
                 </CardDescription>
               </div>
               <Button

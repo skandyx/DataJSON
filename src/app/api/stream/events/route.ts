@@ -4,8 +4,7 @@ import {promises as fs} from 'fs';
 import path from 'path';
 import chokidar from 'chokidar';
 
-const astra = 'PBX';
-const channelFilePath = path.join('/tmp', `channel_${astra}.log`);
+const channelFilePath = path.join('/tmp', 'channel_main.log');
 
 export async function GET(req: NextRequest) {
   const stream = new ReadableStream({
@@ -60,4 +59,3 @@ export async function GET(req: NextRequest) {
 }
 
 export const dynamic = 'force-dynamic';
-
