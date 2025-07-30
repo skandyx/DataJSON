@@ -20,12 +20,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({error: 'No data provided'}, {status: 400});
     }
 
-    // Ensure the Data-Json directory exists
+    // Ensure the Data-Json directory exists at the project root
     try {
       await fs.mkdir(dataDir, { recursive: true });
     } catch (e) {
       // Ignore error if directory already exists
       if ((e as NodeJS.ErrnoException).code !== 'EEXIST') {
+        console.error('Error creating directory:', e);
         throw e;
       }
     }
