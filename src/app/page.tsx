@@ -40,16 +40,16 @@ export default function Home() {
        const origin = window.location.origin;
        setEndpoints([
          { 
-           title: "Données d'appel avancées", 
-           description: "Plus précis, chaque appel peut être détaillé sur plusieurs lignes (transferts, renvois, etc.).",
-           path: '/api/stream/advanced-calls',
-           url: `${origin}/api/stream/advanced-calls`
-         },
-         { 
            title: "Données d'appel simplifiées", 
            description: "Une ligne pour chaque appel. Recommandé pour Power BI.",
            path: '/api/stream/simplified-calls',
            url: `${origin}/api/stream/simplified-calls`
+         },
+         { 
+           title: "Données d'appel avancées", 
+           description: "Plus précis, chaque appel peut être détaillé sur plusieurs lignes (transferts, renvois, etc.).",
+           path: '/api/stream/advanced-calls',
+           url: `${origin}/api/stream/advanced-calls`
          },
          { 
            title: "Disponibilité des agents", 
