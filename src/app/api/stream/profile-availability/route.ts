@@ -3,67 +3,70 @@ import {NextRequest, NextResponse} from 'next/server';
 import {promises as fs} from 'fs';
 import path from 'path';
 
-// Note: This is a simplified implementation for demonstration purposes.
-// In a production environment, you would use a more robust pub/sub system
-// like Redis, RabbitMQ, or a cloud-native service instead of the filesystem.
 const streamName = 'profile-availability';
 const dataDir = path.join(process.cwd(), 'Data-Json');
 const dataFilePath = path.join(dataDir, `${streamName}.json`);
 const channelFilePath = path.join('/tmp', 'channel_main.log'); // Shared channel for all streams
 
 
+async function ensureDirectoryExists() {
+    try {
+        await fs.mkdir(dataDir, { recursive: true });
+    } catch (e) {
+        if ((e as NodeJS.ErrnoException).code !== 'EEXIST') {
+            console.error('Error creating directory:', e);
+            throw e;
+        }
+    }
+}
+
+async function readFileData() {
+    try {
+        await fs.access(dataFilePath);
+        const fileContent = await fs.readFile(dataFilePath, 'utf-8');
+        return JSON.parse(fileContent);
+    } catch (error) {
+        // If file doesn't exist or is not valid JSON, start with an empty array
+        return [];
+    }
+}
+
 async function handlePost(req: NextRequest) {
   try {
-    const rawData = await req.text(); // Read raw text body
+    const rawData = await req.text();
     console.log(`Received data for ${streamName}:`, rawData);
 
     if (!rawData) {
       return NextResponse.json({error: 'No data provided'}, {status: 400});
     }
 
-    // Ensure the Data-Json directory exists at the project root
+    await ensureDirectoryExists();
+
+    let newItems = [];
     try {
-      await fs.mkdir(dataDir, { recursive: true });
-    } catch (e) {
-      // Ignore error if directory already exists
-      if ((e as NodeJS.ErrnoException).code !== 'EEXIST') {
-        console.error('Error creating directory:', e);
-        throw e;
-      }
-    }
-    
-    try {
-      // The incoming data might be a stream of concatenated JSON arrays (e.g., "[...][...]")
-      // We need to split them into individual valid JSON arrays.
-      const jsonStrings = rawData.replace(/\]\[/g, ']|||[').split('|||');
-
-      for (const jsonString of jsonStrings) {
-        if (jsonString.trim() === '') continue;
-
-        const items = JSON.parse(jsonString);
-
-        if (Array.isArray(items)) {
-          for (const item of items) {
-            const itemString = JSON.stringify(item);
-            // Append each individual item object to our "channel" file for real-time updates.
-            await fs.appendFile(channelFilePath, itemString + '\n');
-            // Append each individual item object to the persistent data file
-            await fs.appendFile(dataFilePath, itemString + '\n');
-          }
+        const parsedData = JSON.parse(rawData);
+        if (Array.isArray(parsedData)) {
+            newItems = parsedData;
         } else {
-            // If it's not an array, but a single object
-            const itemString = JSON.stringify(items);
-            await fs.appendFile(channelFilePath, itemString + '\n');
-            await fs.appendFile(dataFilePath, itemString + '\n');
+            newItems.push(parsedData);
         }
-      }
     } catch (e) {
-      console.error(`Error parsing or processing JSON data for ${streamName}:`, e);
-      // Fallback for non-JSON data: store the raw data as before
-      await fs.appendFile(channelFilePath, rawData + '\n');
-      await fs.appendFile(dataFilePath, rawData + '\n');
+      console.error(`Error parsing JSON for ${streamName}, treating as raw string:`, e);
+      // For non-json data, we can wrap it in a simple object.
+      newItems.push({ raw: rawData });
     }
     
+    // Notify the live console for each new item
+    for (const item of newItems) {
+        const itemString = JSON.stringify(item);
+        await fs.appendFile(channelFilePath, itemString + '\n');
+    }
+
+    // Append to the persistent JSON array file
+    const existingData = await readFileData();
+    const updatedData = [...existingData, ...newItems];
+    await fs.writeFile(dataFilePath, JSON.stringify(updatedData, null, 2));
+
     return NextResponse.json({success: true}, {status: 202});
   } catch (error) {
     console.error(`Error in POST /api/stream/${streamName}:`, error);

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, Play, StopCircle, ClipboardCopy, Server, Trash2, ArrowRight } from 'lucide-react';
+import { Copy, Check, Play, StopCircle, ClipboardCopy, Server, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -101,15 +101,19 @@ export default function Home() {
     eventSourceRef.current = es;
 
     es.onmessage = async (event) => {
-      // Update raw data console
-      setRawStreamData(prev => [event.data, ...prev].slice(0, MAX_CONSOLE_MESSAGES));
-      
-      // Directly display the received data
       try {
         const parsedJson = JSON.parse(event.data);
-        setJsonOutput(JSON.stringify(parsedJson, null, 2));
+        const prettyJson = JSON.stringify(parsedJson, null, 2);
+        
+        // Update raw data console with pretty-printed JSON
+        setRawStreamData(prev => [prettyJson, ...prev].slice(0, MAX_CONSOLE_MESSAGES));
+        
+        // Update the main JSON output
+        setJsonOutput(prettyJson);
       } catch (e) {
-        setJsonOutput(event.data); // Fallback for non-JSON data
+        // Fallback for non-JSON data
+        setRawStreamData(prev => [event.data, ...prev].slice(0, MAX_CONSOLE_MESSAGES));
+        setJsonOutput(event.data);
       }
     };
 
@@ -270,9 +274,9 @@ export default function Home() {
               <ScrollArea className="h-[450px] w-full bg-slate-900 text-slate-100 p-4 rounded-md font-code text-sm">
                 {rawStreamData.length > 0 ? (
                     rawStreamData.map((data, index) => (
-                        <p key={index} className="whitespace-pre-wrap break-all border-b border-slate-700 py-1">
+                        <pre key={index} className="whitespace-pre-wrap break-all border-b border-slate-700 py-2">
                             {data}
-                        </p>
+                        </pre>
                     ))
                 ) : (
                     <p className="text-slate-400">En attente de données...</p>
