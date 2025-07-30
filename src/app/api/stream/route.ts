@@ -14,10 +14,10 @@ const channelFilePath = path.join('/tmp', `channel_${astra}.log`);
 
 export async function POST(req: NextRequest) {
   try {
-    const data = await req.text(); // Read raw text body
-    console.log("Received data:", data);
+    const rawData = await req.text(); // Read raw text body
+    console.log("Received data:", rawData);
 
-    if (!data) {
+    if (!rawData) {
       return NextResponse.json({error: 'No data provided'}, {status: 400});
     }
 
@@ -32,11 +32,39 @@ export async function POST(req: NextRequest) {
       }
     }
     
-    // Append the data to our "channel" file for real-time updates.
-    await fs.appendFile(channelFilePath, data + '\n');
+    // --- New Logic to handle JSON arrays ---
+    try {
+      // The incoming data might be a stream of concatenated JSON arrays (e.g., "[...][...]")
+      // We need to split them into individual valid JSON arrays.
+      const jsonStrings = rawData.replace(/\]\[/g, ']|||[').split('|||');
 
-    // Append the data to the persistent datacalls.json file
-    await fs.appendFile(dataFilePath, data + '\n');
+      for (const jsonString of jsonStrings) {
+        if (jsonString.trim() === '') continue;
+
+        const calls = JSON.parse(jsonString);
+
+        if (Array.isArray(calls)) {
+          for (const call of calls) {
+            const callString = JSON.stringify(call);
+            // Append each individual call object to our "channel" file for real-time updates.
+            await fs.appendFile(channelFilePath, callString + '\n');
+            // Append each individual call object to the persistent datacalls.json file
+            await fs.appendFile(dataFilePath, callString + '\n');
+          }
+        } else {
+            // If it's not an array, but a single object
+            const callString = JSON.stringify(calls);
+            await fs.appendFile(channelFilePath, callString + '\n');
+            await fs.appendFile(dataFilePath, callString + '\n');
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing or processing JSON data:', e);
+      // Fallback for non-JSON data: store the raw data as before
+      await fs.appendFile(channelFilePath, rawData + '\n');
+      await fs.appendFile(dataFilePath, rawData + '\n');
+    }
+    // --- End of New Logic ---
     
     return NextResponse.json({success: true}, {status: 202});
   } catch (error) {
