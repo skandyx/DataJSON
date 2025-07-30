@@ -1,5 +1,87 @@
-# Firebase Studio
+# StreamScribe
 
-This is a NextJS starter in Firebase Studio.
+StreamScribe est une application Next.js conçue pour recevoir des flux de données en temps réel (webhooks) depuis un système externe comme un PBX. Elle contextualise les données reçues à l'aide de l'IA (Genkit) et les affiche en direct sur une interface web, tout en les stockant dans un fichier pour archivage.
 
-To get started, take a look at src/app/page.tsx.
+## Fonctionnalités
+
+- **Endpoint API** : Fournit une URL unique (`/api/stream`) pour recevoir des données via des requêtes POST.
+- **Console en temps réel** : Affiche les données brutes dès leur réception sur la page d'accueil pour un suivi facile.
+- **Contextualisation par IA** : Traite chaque donnée reçue avec un modèle d'IA pour l'enrichir et la transformer en un format JSON structuré.
+- **Affichage du JSON** : Montre le dernier objet JSON contextualisé par l'IA.
+- **Stockage des données** : Archive toutes les données brutes reçues dans le fichier `Data-Json/datacalls.json` à la racine du projet. Le dossier `Data-Json` est créé automatiquement.
+
+## Installation et Lancement
+
+Suivez ces étapes pour installer et lancer l'application sur votre serveur ou VPS.
+
+### Prérequis
+
+- Node.js (version 20 ou supérieure)
+- npm
+
+### 1. Cloner le projet
+
+Si vous avez le code sous forme de projet, clonez-le sur votre VPS. Sinon, copiez les fichiers du projet.
+
+### 2. Installer les dépendances
+
+Naviguez jusqu'au répertoire du projet et installez les paquets nécessaires :
+
+```bash
+npm install
+```
+
+### 3. Configurer les variables d'environnement
+
+L'application utilise Genkit pour l'IA. Vous devez configurer votre clé API Gemini. Créez un fichier `.env` à la racine du projet et ajoutez votre clé :
+
+```
+GEMINI_API_KEY=VOTRE_CLÉ_API_GEMINI
+```
+
+### 4. Compiler l'application
+
+Compilez le projet pour la production :
+
+```bash
+npm run build
+```
+
+### 5. Lancer l'application
+
+Démarrez le serveur de production :
+
+```bash
+npm run start
+```
+
+Par défaut, l'application se lancera sur le port 3000. Vous pouvez spécifier un autre port si nécessaire : `npm run start -- -p 9002`.
+
+### 6. Configurer votre PBX
+
+- Une fois l'application lancée, visitez son URL dans votre navigateur (ex: `http://VOTRE_IP_DE_VPS:3000`).
+- Copiez l'URL de l'endpoint affichée sur la page.
+- Collez cette URL dans la configuration des webhooks ou des API de votre système PBX.
+
+### 7. Ouvrir le port sur le pare-feu (Firewall)
+
+**Ceci est une étape cruciale sur un VPS !** Vous devez autoriser le trafic entrant sur le port que votre application utilise. Par exemple, pour ouvrir le port 3000 sur un VPS Linux avec `ufw` :
+
+```bash
+sudo ufw allow 3000/tcp
+```
+
+### 8. Consulter les logs
+
+Pour voir les logs en direct (y compris les données reçues affichées par `console.log`), vous pouvez utiliser un gestionnaire de processus comme `pm2` :
+
+```bash
+# Installer pm2 globalement
+sudo npm install -g pm2
+
+# Lancer l'application avec pm2
+pm2 start npm --name "streamscribe" -- run start
+
+# Afficher les logs en direct
+pm2 logs streamscribe
+```
