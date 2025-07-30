@@ -54,8 +54,7 @@ Démarrez le serveur de production :
 ```bash
 npm run start
 ```
-
-Par défaut, l'application se lancera sur le port 3000. Vous pouvez spécifier un autre port si nécessaire : `npm run start -- -p 9002`.
+L'application se lancera sur le **port 9002**.
 
 ### 6. Ouvrir le port sur le pare-feu (Firewall)
 
@@ -69,11 +68,10 @@ sudo apt update
 sudo apt install ufw
 ```
 
-**b. Ouvrez le port (par exemple 3000) :**
+**b. Ouvrez le port 9002 :**
 ```bash
-sudo ufw allow 3000/tcp
+sudo ufw allow 9002/tcp
 ```
-*(Remplacez `3000` si vous utilisez un autre port)*
 
 **c. Activez le pare-feu :**
 ```bash
@@ -82,9 +80,9 @@ sudo ufw enable
 
 ### 7. Configurer votre PBX
 
-- Une fois l'application lancée et le port ouvert, visitez son URL dans votre navigateur (ex: `http://VOTRE_IP_DE_VPS:3000`).
+- Une fois l'application lancée et le port ouvert, visitez son URL dans votre navigateur (ex: `http://VOTRE_IP_DE_VPS:9002`).
 - Copiez l'URL de l'endpoint affichée sur la page.
-- Collez cette URL dans la configuration des webhooks ou des API de votre système PBX.
+- Collez cette URL dans la configuration des webhooks ou des API de votre système PBX. L'URL doit être `http://VOTRE_IP_DE_VPS:9002/api/stream`.
 
 ### 8. Consulter les logs (Recommandé)
 
